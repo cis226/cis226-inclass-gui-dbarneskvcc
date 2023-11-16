@@ -30,7 +30,7 @@ class EmployeeListWindow:
                 sg.Button("Add New Beverage", key="-open_add_new-"),
                 # Renders an Input box. Collects text from user.
                 sg.Input("", key="-search_id-"),
-                sg.Button("Search", key="-search_button"),
+                sg.Button("Search", key="-search_button-"),
             ],
             [sg.Button("Exit")],
         ]
@@ -53,6 +53,8 @@ class EmployeeListWindow:
             # If we want to add a new beverage
             elif event == "-open_add_new-":
                 self._on_open_add_new(event, values)
+            elif event == "-search_button-":
+                self._on_search(event, values)
 
     def _on_load_csv(self, event, values):
         """Handle when Load CSV button is clicked"""
@@ -75,6 +77,16 @@ class EmployeeListWindow:
         add_window = BeverageAddWindow(self.beverage_collection)
         add_window.run()
         self._update_output(event, values)
+
+    def _on_search(self, event, values):
+        """Handle when user is searching for an item"""
+        search_query = values["-search_id-"]
+        beverage = self.beverage_collection.find_by_id(search_query)
+        if beverage:
+            result_window = BeverageResultWindow(beverage)
+            result_window.run()
+        else:
+            sg.popup_error("Can not find a beverage with that id")
 
     def _update_output(self, event, values):
         """Update the contents of the output Listbox"""
@@ -146,3 +158,60 @@ class BeverageAddWindow:
         except ValueError:
             sg.popup_error("That is not a valid Decimal.")
             return False
+
+
+class BeverageResultWindow:
+    """Simple Beverage Result"""
+
+    def __init__(self, beverage):
+        """Constructor"""
+
+        layout = [
+            [
+                sg.Text("Id"),
+                sg.Input(key="-id-", default_text=beverage.id, disabled=True),
+            ],
+            [
+                sg.Text("Name"),
+                sg.Input(key="-name-", default_text=beverage.name, disabled=True),
+            ],
+            [
+                sg.Text("Pack"),
+                sg.Input(key="-pack-", default_text=beverage.pack, disabled=True),
+            ],
+            [
+                sg.Text("Price"),
+                sg.Input(key="-price-", default_text=beverage.price, disabled=True),
+            ],
+            [
+                sg.Radio(
+                    "Active",
+                    "beverage_active_group",
+                    key="-beverage_active-",
+                    default=beverage.active,
+                )
+            ],
+            [
+                sg.Radio(
+                    "Inactive",
+                    "beverage_active_group",
+                    key="-beverage-inactive-",
+                    default=not beverage.active,
+                )
+            ],
+            [sg.Button("Close", key="-close-")],
+        ]
+        # Make window and assign to class
+        self.window = sg.Window("Search Result", layout)
+
+    def run(self):
+        """Start the windows running"""
+        self._run_loop()
+        self.window.close()
+
+    def _run_loop(self):
+        """Run the event loop"""
+        while True:
+            event, values = self.window.read()
+            if event == sg.WINDOW_CLOSED or event == "-close-":
+                break
